@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { User, AuthState, LoginCredentials, RegisterCredentials, AuthResponse } from '../types/index';
+import type { User, AuthState, LoginCredentials, RegisterCredentials } from '../types/index';
+import { authApi } from '../services/api';
 
 interface AuthStore extends AuthState {
   setUser: (user: User | null) => void;
@@ -9,6 +10,10 @@ interface AuthStore extends AuthState {
   register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => void;
   fetchUser: () => Promise<void>;
+  verifyEmail: (token: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, password: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -23,39 +28,17 @@ export const useAuthStore = create<AuthStore>((set) => ({
   login: async (credentials) => {
     try {
       set({ loading: true, error: null });
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
+      const data = await authApi.login(credentials);
   
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Failed to login');
-      }
-  
-      const data = await response.json();
-  
-      const user = {
-        name: data.name,
-        isPremium: data.isPremium ?? false,
-        id: data.id ?? null,
-        email: data.email ?? '',
-        expiredPremium: data.expiredPremium ?? null,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt
-      };
-  
+      const user = data.user;
       sessionStorage.setItem('token', data.token);
       sessionStorage.setItem('user', JSON.stringify(user));
   
       set({ user, loading: false });
-
-      window.location.reload()
+      window.location.reload();
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'An error occurred', loading: false });
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      set({ error: errorMessage, loading: false });
       throw error;
     }
   },
@@ -63,35 +46,66 @@ export const useAuthStore = create<AuthStore>((set) => ({
   register: async (credentials) => {
     try {
       set({ loading: true, error: null });
-  
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
-  
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Failed to register');
-      }
-  
-      const data = await response.json();
-  
-      const user = {
-        name: data.name,
-        isPremium: data.isPremium ?? false,
-        id: data.id ?? null,
-        email: data.email ?? '',
-      };
-  
+      const data = await authApi.register(credentials);
+      
+      // Registration successful, but user needs to verify email
+      set({ loading: false, error: null });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      set({ error: errorMessage, loading: false });
+      throw error;
+    }
+  },
+
+  verifyEmail: async (token: string) => {
+    try {
+      set({ loading: true, error: null });
+      const data = await authApi.verifyEmail(token);
+      
+      const user = data.user;
       sessionStorage.setItem('token', data.token);
       sessionStorage.setItem('user', JSON.stringify(user));
-  
+      
       set({ user, loading: false });
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'An error occurred', loading: false });
+      const errorMessage = error instanceof Error ? error.message : 'Email verification failed';
+      set({ error: errorMessage, loading: false });
+      throw error;
+    }
+  },
+
+  resendVerification: async (email: string) => {
+    try {
+      set({ loading: true, error: null });
+      await authApi.resendVerification(email);
+      set({ loading: false });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resend verification';
+      set({ error: errorMessage, loading: false });
+      throw error;
+    }
+  },
+
+  forgotPassword: async (email: string) => {
+    try {
+      set({ loading: true, error: null });
+      await authApi.forgotPassword(email);
+      set({ loading: false });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send reset email';
+      set({ error: errorMessage, loading: false });
+      throw error;
+    }
+  },
+
+  resetPassword: async (token: string, password: string) => {
+    try {
+      set({ loading: true, error: null });
+      await authApi.resetPassword(token, password);
+      set({ loading: false });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reset password';
+      set({ error: errorMessage, loading: false });
       throw error;
     }
   },
@@ -99,30 +113,31 @@ export const useAuthStore = create<AuthStore>((set) => ({
   logout: () => {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
+    sessionStorage.removeItem('ageConfirmed');
     set({ user: null });
   },
 
   fetchUser: async () => {
     const token = sessionStorage.getItem('token');
-    const savedUser = sessionStorage.getItem('user');
 
-    if (!token || !savedUser) return;
+    if (!token) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/dashboard`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Session expired or invalid token');
-      }
-
-      const user: User = await response.json();
+      const user = await authApi.getDashboard();
       set({ user });
     } catch (error) {
-      set({ user: JSON.parse(savedUser) });
+      // If API call fails, try to use saved user data
+      const savedUser = sessionStorage.getItem('user');
+      if (savedUser) {
+        try {
+          set({ user: JSON.parse(savedUser) });
+        } catch (parseError) {
+          // If saved data is corrupted, clear everything
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          set({ user: null });
+        }
+      }
     }
   },
 }));

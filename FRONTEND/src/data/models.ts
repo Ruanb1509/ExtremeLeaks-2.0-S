@@ -1,9 +1,12 @@
+import { modelsApi } from '../services/api';
 import type { Model } from '../types';
 
 export const models = async (): Promise<Model[]> => {
-  const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/post`); 
-  if (!response.ok) {
-    throw new Error('Erro ao buscar os modelos');
+  try {
+    const response = await modelsApi.getAll({ limit: 100 });
+    return response.models || [];
+  } catch (error) {
+    console.error('Error fetching models:', error);
+    return [];
   }
-  return await response.json();
 };
