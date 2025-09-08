@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Flame, Menu, X, User, Crown, ChevronDown, LogOut, UserCircle } from 'lucide-react';
+import { Flame, Menu, X, User, Crown, ChevronDown, LogOut, UserCircle, Globe } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import AuthModal from '../auth/AuthModal';
 import Button from '../ui/Button';
 import UserDropdown from './UserDropdown';
+import LanguageSelector from './LanguageSelector';
 
 const Header: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuthStore();
   const { fetchUser } = useAuthStore();
@@ -86,6 +88,25 @@ const Header: React.FC = () => {
               <NavLink to="/dmca" active={location.pathname === '/dmca'}>
                 DMCA
               </NavLink>
+              
+              <div className="relative">
+                <button
+                  onClick={() => setShowLanguageSelector(!showLanguageSelector)}
+                  className="flex items-center text-gray-200 hover:text-primary-400 transition-colors"
+                >
+                  <Globe size={16} className="mr-1" />
+                  <ChevronDown 
+                    size={14} 
+                    className={`transition-transform duration-200 ${
+                      showLanguageSelector ? 'transform rotate-180' : ''
+                    }`} 
+                  />
+                </button>
+                
+                {showLanguageSelector && (
+                  <LanguageSelector onClose={() => setShowLanguageSelector(false)} />
+                )}
+              </div>
 
               {user ? (
                 <div className="flex items-center space-x-4">
@@ -159,6 +180,30 @@ const Header: React.FC = () => {
               <MobileNavLink to="/dmca" active={location.pathname === '/dmca'}>
                 DMCA
               </MobileNavLink>
+              
+              <div className="px-4 py-2">
+                <button
+                  onClick={() => setShowLanguageSelector(!showLanguageSelector)}
+                  className="w-full flex items-center justify-between text-gray-200 hover:text-primary-400"
+                >
+                  <div className="flex items-center">
+                    <Globe size={16} className="text-gray-400 mr-2" />
+                    <span className="font-medium">Language</span>
+                  </div>
+                  <ChevronDown 
+                    size={16} 
+                    className={`text-gray-400 transition-transform duration-200 ${
+                      showLanguageSelector ? 'transform rotate-180' : ''
+                    }`} 
+                  />
+                </button>
+                
+                {showLanguageSelector && (
+                  <div className="mt-2">
+                    <LanguageSelector onClose={() => setShowLanguageSelector(false)} />
+                  </div>
+                )}
+              </div>
               
               {user ? (
                 <>

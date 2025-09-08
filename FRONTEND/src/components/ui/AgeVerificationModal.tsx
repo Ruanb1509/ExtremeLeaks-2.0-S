@@ -14,7 +14,6 @@ const AgeVerificationModal: React.FC<AgeVerificationModalProps> = ({
   onConfirm, 
   onExit 
 }) => {
-  const [birthDate, setBirthDate] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -29,7 +28,7 @@ const AgeVerificationModal: React.FC<AgeVerificationModalProps> = ({
     setError('');
 
     try {
-      await ageVerificationApi.confirm(true, birthDate || undefined);
+      await ageVerificationApi.confirm(true);
       sessionStorage.setItem('ageConfirmed', 'true');
       onConfirm();
     } catch (err: any) {
@@ -75,23 +74,6 @@ const AgeVerificationModal: React.FC<AgeVerificationModalProps> = ({
           )}
 
           <div className="space-y-4 mb-6">
-            <div>
-              <label htmlFor="birthDate" className="block text-sm font-medium text-gray-300 mb-2">
-                Date of Birth (Optional)
-              </label>
-              <div className="relative">
-                <Calendar size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="date"
-                  id="birthDate"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  max={new Date(Date.now() - 18 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-                  className="w-full pl-10 pr-4 py-2 bg-dark-300 border border-dark-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-white"
-                  disabled={loading}
-                />
-              </div>
-            </div>
 
             <label className="flex items-start cursor-pointer">
               <input

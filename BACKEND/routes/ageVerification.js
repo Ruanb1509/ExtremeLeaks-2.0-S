@@ -18,26 +18,10 @@ const ageVerificationMiddleware = (req, res, next) => {
 
 // Confirmar idade
 router.post('/confirm', (req, res) => {
-  const { confirmed, birthDate } = req.body;
+  const { confirmed } = req.body;
   
   if (!confirmed) {
     return res.status(400).json({ error: 'Age confirmation is required' });
-  }
-  
-  // Verificar idade se data de nascimento foi fornecida
-  if (birthDate) {
-    const birth = new Date(birthDate);
-    const today = new Date();
-    const age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    
-    if (age < 18) {
-      return res.status(403).json({ error: 'You must be 18 years or older to access this content' });
-    }
   }
   
   // Salvar confirmação na sessão (se usando sessões)

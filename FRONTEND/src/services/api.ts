@@ -163,8 +163,8 @@ export const authApi = {
 
 // Age Verification API
 export const ageVerificationApi = {
-  confirm: async (confirmed: boolean, birthDate?: string) => {
-    const response = await api.post('/age-verification/confirm', { confirmed, birthDate });
+  confirm: async (confirmed: boolean) => {
+    const response = await api.post('/age-verification/confirm', { confirmed });
     return response.data;
   },
   
