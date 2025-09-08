@@ -108,14 +108,3 @@ const ModelCard: React.FC<ModelCardProps> = ({ model }) => {
 };
 
 export default ModelCard;
-              <Eye size={14} className="mr-1 text-primary-500" />
-              <span>{formatViews(model.views)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </a>
-  );
-};
-
-export default ModelCard;
