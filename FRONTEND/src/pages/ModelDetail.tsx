@@ -121,6 +121,12 @@ const ModelDetail: React.FC = () => {
     return ethnicity ? labels[ethnicity as keyof typeof labels] : 'Not specified';
   };
 
+  const handleDownload = () => {
+    if (model?.megaLink) {
+      window.open(model.megaLink, '_blank');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark-300">
@@ -447,47 +453,25 @@ const ModelDetail: React.FC = () => {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      </div>
-    </main>
 
-    <ReportModal
-      isOpen={showReportModal}
-      onClose={() => setShowReportModal(false)}
-      modelId={model?.id}
-      title={model?.name || 'Model'}
-    />
-    </>
-  );
-};
+            {/* Download Section */}
+            <div className="bg-dark-200 rounded-lg shadow-lg p-6">
+              <h1 className="text-3xl font-bold mb-4 text-white">
+                {model.name}
+              </h1>
 
-export default ModelDetail;
-            <img
-              src={model.imageUrl}
-              alt={model.name}
-              className="w-full h-auto object-cover"
-            />
-          </div>
-
-          {/* Info Section */}
-          <div className="bg-dark-200 rounded-lg shadow-lg p-6">
-            <h1 className="text-3xl font-bold mb-4 text-white">
-              {model.name}
-            </h1>
-
-            <div className="mb-8">
-              <div className="h-0.5 w-16 bg-primary-500 mb-4"></div>
-              <p className="text-gray-300 leading-relaxed">
-                {model.description}
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-dark-300 p-4 rounded-lg border border-dark-100">
-                <p className="text-gray-400 text-sm mb-2">To access this content:</p>
-                <p className="text-white font-medium">Click the button below to visit the Mega link</p>
+              <div className="mb-8">
+                <div className="h-0.5 w-16 bg-primary-500 mb-4"></div>
+                <p className="text-gray-300 leading-relaxed">
+                  {model.description}
+                </p>
               </div>
+
+              <div className="space-y-4">
+                <div className="bg-dark-300 p-4 rounded-lg border border-dark-100">
+                  <p className="text-gray-400 text-sm mb-2">To access this content:</p>
+                  <p className="text-white font-medium">Click the button below to visit the Mega link</p>
+                </div>
 
                 <Button
                   variant="primary"
@@ -502,14 +486,23 @@ export default ModelDetail;
                   </span>
                 </Button>
 
-              <p className="text-xs text-gray-500 text-center mt-2">
-                By accessing this content, you confirm you are 18+ and accept our terms.
-              </p>
+                <p className="text-xs text-gray-500 text-center mt-2">
+                  By accessing this content, you confirm you are 18+ and accept our terms.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </main>
+
+    <ReportModal
+      isOpen={showReportModal}
+      onClose={() => setShowReportModal(false)}
+      modelId={model?.id}
+      title={model?.name || 'Model'}
+    />
+    </>
   );
 };
 
