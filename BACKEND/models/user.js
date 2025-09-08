@@ -112,7 +112,7 @@ module.exports = (sequelize, DataTypes) => {
         as: 'histories'
       });
     };
-      timestamps: true,
+    /*  timestamps: true,
     });
 
     User.associate = function(models) {
@@ -124,7 +124,7 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'userId',
         as: 'histories'
       });
-    };
+    }; */
   
     return User;
   };
