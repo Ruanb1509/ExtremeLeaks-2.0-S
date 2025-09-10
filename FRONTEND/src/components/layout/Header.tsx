@@ -82,6 +82,9 @@ const Header: React.FC = () => {
               <NavLink to="/" active={location.pathname === '/'}>
                 Home
               </NavLink>
+              <NavLink to="/models" active={location.pathname === '/models'}>
+                Models
+              </NavLink>
               <NavLink to="/premium" active={location.pathname === '/premium'}>
                 Premium
               </NavLink>
@@ -173,6 +176,9 @@ const Header: React.FC = () => {
             <div className="flex flex-col space-y-4">
               <MobileNavLink to="/" active={location.pathname === '/'}>
                 Home
+              </MobileNavLink>
+              <MobileNavLink to="/models" active={location.pathname === '/models'}>
+                Models
               </MobileNavLink>
               <MobileNavLink to="/premium" active={location.pathname === '/premium'}>
                 Premium
