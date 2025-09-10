@@ -25,6 +25,7 @@ const ContentDetail: React.FC = () => {
   const navigate = useNavigate();
   const [content, setContent] = useState<Content | null>(null);
   const [relatedContents, setRelatedContents] = useState<Content[]>([]);
+  const [generalContents, setGeneralContents] = useState<Content[]>([]);
   const [loading, setLoading] = useState(true);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -54,6 +55,19 @@ const ContentDetail: React.FC = () => {
           // Filtrar o conteúdo atual da lista de relacionados
           const filtered = (relatedData.contents || []).filter(c => c.id !== contentData.id);
           setRelatedContents(filtered);
+          
+          // Se não há conteúdos relacionados suficientes, carregar conteúdos gerais
+          if (filtered.length < 3) {
+            const generalData = await contentApi.getAll({ 
+              limit: 8,
+              sortBy: 'recent'
+            });
+            // Filtrar o conteúdo atual e os já relacionados
+            const generalFiltered = (generalData.contents || [])
+              .filter(c => c.id !== contentData.id && !filtered.some(r => r.id === c.id))
+              .slice(0, 6);
+            setGeneralContents(generalFiltered);
+          }
         }
       } catch (error) {
         console.error('Error loading content:', error);
@@ -286,17 +300,23 @@ const ContentDetail: React.FC = () => {
             {/* Sidebar - Related Content */}
             <div className="lg:col-span-1">
               <div className="bg-dark-200 rounded-xl shadow-lg p-6 sticky top-24">
-                <h3 className="text-xl font-semibold text-white mb-4">
-                  More from {content.model?.name}
-                </h3>
+                {relatedContents.length > 0 ? (
+                  <h3 className="text-xl font-semibold text-white mb-4">
+                    More from {content.model?.name}
+                  </h3>
+                ) : (
+                  <h3 className="text-xl font-semibold text-white mb-4">
+                    More Content
+                  </h3>
+                )}
                 
                 <div className="space-y-4">
-                  {relatedContents.length > 0 ? (
-                    relatedContents.map((relatedContent) => (
-                      <Link
+                  {(relatedContents.length > 0 ? relatedContents : generalContents).length > 0 ? (
+                    (relatedContents.length > 0 ? relatedContents : generalContents).map((relatedContent) => (
+                      <button
                         key={relatedContent.id}
-                        to={`/content/${relatedContent.id}`}
-                        className="block group"
+                        onClick={() => handleContentClick(relatedContent.id)}
+                        className="block group w-full text-left"
                       >
                         <div className="flex space-x-3 p-3 rounded-lg hover:bg-dark-300 transition-colors">
                           <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-dark-400">
@@ -307,9 +327,11 @@ const ContentDetail: React.FC = () => {
                                 className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-300"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-dark-400">
-                                
-                              </div>
+                              <img
+                                src={relatedContent.model?.photoUrl}
+                                alt={relatedContent.title}
+                                className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-300"
+                              />
                             )}
                             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
                           </div>
@@ -317,28 +339,37 @@ const ContentDetail: React.FC = () => {
                             <h4 className="text-white font-medium text-sm group-hover:text-primary-400 transition-colors line-clamp-2 mb-1">
                               {relatedContent.title}
                             </h4>
+                            {relatedContent.model && (
+                              <p className="text-xs text-gray-400 mb-1">
+                                by {relatedContent.model.name}
+                              </p>
+                            )}
                             <div className="flex items-center text-xs text-gray-400">
                               <Eye size={12} className="mr-1" />
                               <span>{formatViews(relatedContent.views)}</span>
-                              <span className="mx-2">•</span>
+                              <span className="mx-1">•</span>
+                              <span>{new Date(relatedContent.createdAt).toLocaleDateString()}</span>
                             </div>
                           </div>
                         </div>
-                      </Link>
+                      </button>
                     ))
                   ) : (
-                    <p className="text-gray-400 text-sm">No related content available</p>
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-2">📱</div>
+                      <p className="text-gray-400 text-sm">Loading more content...</p>
+                    </div>
                   )}
                 </div>
 
                 {content.model && (
                   <div className="mt-6 pt-6 border-t border-dark-100">
-                    <Link
-                      to={`/model/${content.model.slug}`}
-                      className="block w-full text-center px-4 py-3 bg-dark-300 hover:bg-dark-100 text-gray-300 hover:text-white rounded-lg transition-colors"
+                    <button
+                      onClick={() => navigate(`/model/${content.model!.slug}`)}
+                      className="w-full text-center px-4 py-3 bg-dark-300 hover:bg-dark-100 text-gray-300 hover:text-white rounded-lg transition-colors"
                     >
                       View All Content from {content.model.name}
-                    </Link>
+                    </button>
                   </div>
                 )}
               </div>
