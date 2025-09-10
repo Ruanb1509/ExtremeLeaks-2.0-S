@@ -11,7 +11,9 @@ import {
   Calendar,
   User,
   Flag,
-  Download
+  Download,
+  Play,
+  Image as ImageIcon
 } from 'lucide-react';
 import type { Content } from '../types';
 import { contentApi } from '../services/api';
@@ -29,13 +31,24 @@ const ContentDetail: React.FC = () => {
 
   useEffect(() => {
     const fetchContentData = async () => {
+      if (!id) {
+        navigate('/');
+        return;
+      }
+
       try {
-        const contentData = await contentApi.getById(parseInt(id!));
+        setLoading(true);
+        
+        // Carregar dados do conteúdo
+        const contentData = await contentApi.getById(parseInt(id));
         setContent(contentData);
         
         // Carregar conteúdos relacionados da mesma modelo
         if (contentData.modelId) {
-          const relatedData = await contentApi.getByModel(contentData.modelId, { limit: 6 });
+          const relatedData = await contentApi.getByModel(contentData.modelId, { 
+            limit: 6,
+            sortBy: 'recent'
+          });
           // Filtrar o conteúdo atual da lista de relacionados
           const filtered = (relatedData.contents || []).filter(c => c.id !== contentData.id);
           setRelatedContents(filtered);
@@ -47,10 +60,8 @@ const ContentDetail: React.FC = () => {
         setLoading(false);
       }
     };
-  
-    if (id) {
-      fetchContentData();
-    }
+
+    fetchContentData();
   }, [id, navigate]);
 
   const handleBack = () => {
@@ -58,13 +69,20 @@ const ContentDetail: React.FC = () => {
   };
 
   const handleMegaLinkClick = async () => {
+    if (!content) return;
+
     try {
-      if (content) {
-        await contentApi.recordView(content.id);
-        window.open(content.url, '_blank');
-      }
+      // Registrar visualização
+      await contentApi.recordView(content.id);
+      
+      // Abrir link em nova aba
+      window.open(content.url, '_blank');
+      
+      // Atualizar contador local
+      setContent(prev => prev ? { ...prev, views: prev.views + 1 } : null);
     } catch (error) {
       console.error('Error recording view:', error);
+      // Mesmo com erro, abrir o link
       if (content) {
         window.open(content.url, '_blank');
       }
@@ -72,9 +90,11 @@ const ContentDetail: React.FC = () => {
   };
 
   const handleShare = async () => {
+    if (!content) return;
+
     const shareData = {
-      title: content?.title,
-      text: `Check out ${content?.title} by ${content?.model?.name}`,
+      title: content.title,
+      text: `Check out ${content.title} by ${content.model?.name}`,
       url: window.location.href
     };
 
@@ -101,13 +121,22 @@ const ContentDetail: React.FC = () => {
   const getContentTypeIcon = (type: string) => {
     switch (type) {
       case 'video':
-        return '🎥';
+        return <Play size={20} className="text-white" />;
       case 'image':
-        return '📷';
+        return <ImageIcon size={20} className="text-white" />;
       case 'gallery':
-        return '🖼️';
+        return <ImageIcon size={20} className="text-white" />;
       default:
-        return '📄';
+        return <Play size={20} className="text-white" />;
+    }
+  };
+
+  const getContentTypeEmoji = (type: string) => {
+    switch (type) {
+      case 'video': return '🎥';
+      case 'image': return '📷';
+      case 'gallery': return '🖼️';
+      default: return '📄';
     }
   };
 
@@ -150,7 +179,7 @@ const ContentDetail: React.FC = () => {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center mb-3">
-                      <span className="text-2xl mr-2">{getContentTypeIcon(content.type)}</span>
+                      <span className="text-2xl mr-2">{getContentTypeEmoji(content.type)}</span>
                       <span className="ml-2 text-primary-400 font-medium capitalize">{content.type}</span>
                     </div>
                     <h1 className="text-3xl font-bold text-white mb-3">
@@ -257,7 +286,9 @@ const ContentDetail: React.FC = () => {
                     />
                     <div className="flex-1">
                       <h4 className="text-lg font-semibold text-white mb-2">{content.model.name}</h4>
-                      <p className="text-gray-300 text-sm mb-4 line-clamp-3">{content.model.bio}</p>
+                      {content.model.bio && (
+                        <p className="text-gray-300 text-sm mb-4 line-clamp-3">{content.model.bio}</p>
+                      )}
                       <Link
                         to={`/model/${content.model.slug}`}
                         className="inline-flex items-center px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
@@ -274,38 +305,50 @@ const ContentDetail: React.FC = () => {
             {/* Sidebar - Related Content */}
             <div className="lg:col-span-1">
               <div className="bg-dark-200 rounded-xl shadow-lg p-6 sticky top-24">
-                <h3 className="text-xl font-semibold text-white mb-4">More from {content.model?.name}</h3>
+                <h3 className="text-xl font-semibold text-white mb-4">
+                  More from {content.model?.name}
+                </h3>
                 
                 <div className="space-y-4">
-                  {relatedContents.map((relatedContent) => (
-                    <Link
-                      key={relatedContent.id}
-                      to={`/content/${relatedContent.id}`}
-                      className="block group"
-                    >
-                      <div className="flex space-x-3 p-3 rounded-lg hover:bg-dark-300 transition-colors">
-                        <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-dark-400">
-                          <img
-                            src={relatedContent.thumbnailUrl || content.model?.photoUrl}
-                            alt={relatedContent.title}
-                            className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-white font-medium text-sm group-hover:text-primary-400 transition-colors line-clamp-2 mb-1">
-                            {relatedContent.title}
-                          </h4>
-                          <div className="flex items-center text-xs text-gray-400">
-                            <Eye size={12} className="mr-1" />
-                            <span>{formatViews(relatedContent.views)}</span>
-                            <span className="mx-2">•</span>
-                            <span className="capitalize">{relatedContent.type}</span>
+                  {relatedContents.length > 0 ? (
+                    relatedContents.map((relatedContent) => (
+                      <Link
+                        key={relatedContent.id}
+                        to={`/content/${relatedContent.id}`}
+                        className="block group"
+                      >
+                        <div className="flex space-x-3 p-3 rounded-lg hover:bg-dark-300 transition-colors">
+                          <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-dark-400">
+                            {relatedContent.thumbnailUrl ? (
+                              <img
+                                src={relatedContent.thumbnailUrl}
+                                alt={relatedContent.title}
+                                className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-dark-400">
+                                {getContentTypeIcon(relatedContent.type)}
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-white font-medium text-sm group-hover:text-primary-400 transition-colors line-clamp-2 mb-1">
+                              {relatedContent.title}
+                            </h4>
+                            <div className="flex items-center text-xs text-gray-400">
+                              <Eye size={12} className="mr-1" />
+                              <span>{formatViews(relatedContent.views)}</span>
+                              <span className="mx-2">•</span>
+                              <span className="capitalize">{relatedContent.type}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    ))
+                  ) : (
+                    <p className="text-gray-400 text-sm">No related content available</p>
+                  )}
                 </div>
 
                 {content.model && (

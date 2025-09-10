@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import SearchInput from '../components/ui/SearchInput';
 import AgeVerificationModal from '../components/ui/AgeVerificationModal';
 import Pagination from '../components/ui/pagination';
@@ -230,9 +230,9 @@ const Home: React.FC = () => {
                 ))
               ) : contents.length > 0 ? (
                 contents.map((content) => (
-                  <a 
+                  <Link 
                     key={content.id}
-                    href={`#/content/${content.id}`} 
+                    to={`/content/${content.id}`}
                     className="group block overflow-hidden bg-dark-200 rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
                   >
                     <div className="relative aspect-[4/5] overflow-hidden">
@@ -284,7 +284,7 @@ const Home: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  </a>
+                  </Link>
                 ))
               ) : (
                 <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
