@@ -1,7 +1,7 @@
 import { modelsApi } from '../services/api';
 import type { Model } from '../types';
 
-export const models = async (): Promise<Model[]> => {
+export const getModels = async (): Promise<Model[]> => {
   try {
     const response = await modelsApi.getAll({ limit: 100 });
     return response.models || [];

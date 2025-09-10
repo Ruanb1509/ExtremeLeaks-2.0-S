@@ -11,8 +11,6 @@ import {
   Calendar,
   User,
   Flag,
-  Play,
-  Image as ImageIcon,
   Download
 } from 'lucide-react';
 import type { Content } from '../types';
@@ -32,84 +30,16 @@ const ContentDetail: React.FC = () => {
   useEffect(() => {
     const fetchContentData = async () => {
       try {
-        // Para demonstração, vamos usar dados mock
-        // Em produção, você usaria: const contentData = await contentApi.getById(parseInt(id!));
-        
-        const mockContent: Content = {
-          id: parseInt(id!),
-          modelId: 1,
-          title: "Exclusive Premium Collection",
-          url: "https://mega.nz/example-link",
-          thumbnailUrl: "https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg",
-          type: "image",
-          tags: ["exclusive", "premium", "photoshoot"],
-          views: 1250,
-          status: "active",
-          language: "en",
-          isActive: true,
-          createdAt: "2024-01-15T10:00:00Z",
-          updatedAt: "2024-01-15T10:00:00Z",
-          model: {
-            id: 1,
-            name: "Sophia Martinez",
-            photoUrl: "https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg",
-            bio: "Professional model and content creator with over 5 years of experience in the industry.",
-            hairColor: "Brunette",
-            eyeColor: "Brown",
-            bodyType: "Slim",
-            bustSize: "34C",
-            height: 165,
-            weight: 55,
-            age: 25,
-            birthPlace: "Miami, FL",
-            ethnicity: "latina",
-            orientation: "Heterosexual",
-            tags: ["model", "latina", "professional"],
-            views: 5000,
-            slug: "sophia-martinez-abc123",
-            isActive: true,
-            createdAt: "2024-01-01T00:00:00Z",
-            updatedAt: "2024-01-15T10:00:00Z"
-          }
-        };
-
-        setContent(mockContent);
+        const contentData = await contentApi.getById(parseInt(id!));
+        setContent(contentData);
         
         // Carregar conteúdos relacionados da mesma modelo
-        const mockRelatedContents: Content[] = [
-          {
-            id: 2,
-            modelId: 1,
-            title: "Behind the Scenes",
-            url: "https://mega.nz/example2",
-            thumbnailUrl: "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg",
-            type: "video",
-            tags: ["behind-scenes"],
-            views: 890,
-            status: "active",
-            language: "en",
-            isActive: true,
-            createdAt: "2024-01-10T10:00:00Z",
-            updatedAt: "2024-01-10T10:00:00Z"
-          },
-          {
-            id: 3,
-            modelId: 1,
-            title: "Summer Collection",
-            url: "https://mega.nz/example3",
-            thumbnailUrl: "https://images.pexels.com/photos/1040881/pexels-photo-1040881.jpeg",
-            type: "image",
-            tags: ["summer", "collection"],
-            views: 1100,
-            status: "active",
-            language: "en",
-            isActive: true,
-            createdAt: "2024-01-05T10:00:00Z",
-            updatedAt: "2024-01-05T10:00:00Z"
-          }
-        ];
-
-        setRelatedContents(mockRelatedContents);
+        if (contentData.modelId) {
+          const relatedData = await contentApi.getByModel(contentData.modelId, { limit: 6 });
+          // Filtrar o conteúdo atual da lista de relacionados
+          const filtered = (relatedData.contents || []).filter(c => c.id !== contentData.id);
+          setRelatedContents(filtered);
+        }
       } catch (error) {
         console.error('Error loading content:', error);
         navigate('/');
@@ -168,14 +98,16 @@ const ContentDetail: React.FC = () => {
     }).format(views);
   };
 
-  const getContentIcon = (type: string) => {
+  const getContentTypeIcon = (type: string) => {
     switch (type) {
       case 'video':
-        return <Play size={24} className="text-primary-500" />;
+        return '🎥';
       case 'image':
-        return <ImageIcon size={24} className="text-primary-500" />;
+        return '📷';
+      case 'gallery':
+        return '🖼️';
       default:
-        return <ImageIcon size={24} className="text-primary-500" />;
+        return '📄';
     }
   };
 
@@ -218,7 +150,7 @@ const ContentDetail: React.FC = () => {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center mb-3">
-                      {getContentIcon(content.type)}
+                      <span className="text-2xl mr-2">{getContentTypeIcon(content.type)}</span>
                       <span className="ml-2 text-primary-400 font-medium capitalize">{content.type}</span>
                     </div>
                     <h1 className="text-3xl font-bold text-white mb-3">
@@ -352,11 +284,11 @@ const ContentDetail: React.FC = () => {
                       className="block group"
                     >
                       <div className="flex space-x-3 p-3 rounded-lg hover:bg-dark-300 transition-colors">
-                        <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                        <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-dark-400">
                           <img
                             src={relatedContent.thumbnailUrl || content.model?.photoUrl}
                             alt={relatedContent.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-300"
                           />
                           <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
                         </div>

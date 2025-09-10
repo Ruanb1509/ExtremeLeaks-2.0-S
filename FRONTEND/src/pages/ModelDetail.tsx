@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import ReportModal from '../components/ui/ReportModal';
+import FilterPanel from '../components/ui/FilterPanel';
+import SearchInput from '../components/ui/SearchInput';
+import Pagination from '../components/ui/pagination';
 import { 
   ArrowLeft, 
   ExternalLink, 
@@ -17,13 +20,16 @@ import {
   Heart,
   Flag,
   ChevronDown,
-  Play,
-  Image as ImageIcon
+  Filter,
+  X,
+  Clock,
+  TrendingUp
 } from 'lucide-react';
-import type { Model, Content } from '../types';
-import { linkvertise } from '../components/Linkvertise/Linkvertise';
+import type { Model, Content, FilterOptions, SortOption } from '../types';
 import { modelsApi, contentApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
+
+const ITEMS_PER_PAGE = 12;
 
 const ModelDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -31,10 +37,17 @@ const ModelDetail: React.FC = () => {
   const [model, setModel] = useState<Model | null>(null);
   const [contents, setContents] = useState<Content[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contentLoading, setContentLoading] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [contentLoading, setContentLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<FilterOptions>({});
+  const [sortOption, setSortOption] = useState<SortOption>('recent');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const { user } = useAuthStore();
 
   useEffect(() => {
@@ -42,17 +55,11 @@ const ModelDetail: React.FC = () => {
       try {
         const modelData = await modelsApi.getBySlug(slug!);
         setModel(modelData);
-        
-        // Load model contents
-        setContentLoading(true);
-        const contentData = await contentApi.getByModel(modelData.id, { limit: 20 });
-        setContents(contentData.contents || []);
       } catch (error) {
         console.error('Error loading model:', error);
         navigate('/');
       } finally {
         setLoading(false);
-        setContentLoading(false);
       }
     };
   
@@ -62,10 +69,35 @@ const ModelDetail: React.FC = () => {
   }, [slug, navigate]);
 
   useEffect(() => {
-    if (!user?.isPremium && !user?.isAdmin) {
-      linkvertise("1329936", { whitelist: ["extreme-leaks.vercel.app"] });
+    if (model) {
+      loadContents();
     }
-  }, [user]);
+  }, [model, currentPage, sortOption, searchQuery, filters]);
+
+  const loadContents = async () => {
+    if (!model) return;
+    
+    setContentLoading(true);
+    try {
+      const params = {
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        sortBy: sortOption,
+        search: searchQuery || undefined,
+        ...filters
+      };
+
+      const response = await contentApi.getByModel(model.id, params);
+      setContents(response.contents || []);
+      setTotalPages(response.pagination?.totalPages || 1);
+      setTotalItems(response.pagination?.totalItems || 0);
+    } catch (error) {
+      console.error('Error loading contents:', error);
+      setContents([]);
+    } finally {
+      setContentLoading(false);
+    }
+  };
 
   const handleBack = () => {
     navigate('/');
@@ -121,9 +153,39 @@ const ModelDetail: React.FC = () => {
     return ethnicity ? labels[ethnicity as keyof typeof labels] : 'Not specified';
   };
 
-  const handleDownload = () => {
-    if (model?.megaLink) {
-      window.open(model.megaLink, '_blank');
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setFilters({});
+  };
+
+  const hasActiveFilters = Object.keys(filters).some(key => 
+    filters[key as keyof FilterOptions] !== undefined && 
+    filters[key as keyof FilterOptions] !== ''
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filters]);
+
+  const handleContentDetail = (contentId: number) => {
+    navigate(`/content/${contentId}`);
+  };
+
+  const getContentTypeIcon = (type: string) => {
+    switch (type) {
+      case 'video':
+        return '🎥';
+      case 'image':
+        return '📷';
+      case 'gallery':
+        return '🖼️';
+      default:
+        return '📄';
     }
   };
 
@@ -393,103 +455,186 @@ const ModelDetail: React.FC = () => {
               )}
             </div>
 
-            {/* Content Section */}
+            {/* Content Section with Filters */}
             <div className="bg-dark-200 rounded-lg shadow-lg p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">
-                Content ({contents.length})
-              </h3>
+              {/* Content Header with Search and Filters */}
+              <div className="mb-6">
+                <div className="flex flex-col lg:flex-row gap-4 mb-4">
+                  <div className="flex-1">
+                    <SearchInput
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      placeholder="Search content..."
+                    />
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      className={`px-4 py-2 rounded-lg flex items-center transition-all duration-200 ${
+                        showFilters || hasActiveFilters
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-dark-300 text-gray-400 hover:bg-dark-100'
+                      }`}
+                    >
+                      <Filter size={16} className="mr-2" />
+                      Filters
+                      {hasActiveFilters && (
+                        <span className="ml-2 bg-white/20 text-xs px-2 py-1 rounded-full">
+                          {Object.keys(filters).filter(key => filters[key as keyof FilterOptions]).length}
+                        </span>
+                      )}
+                    </button>
+                    
+                    {(searchQuery || hasActiveFilters) && (
+                      <button
+                        onClick={clearSearch}
+                        className="px-3 py-2 text-gray-400 hover:text-white hover:bg-dark-300 rounded-lg transition-all duration-200"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Filter Panel */}
+                {showFilters && (
+                  <div className="mb-4">
+                    <FilterPanel
+                      filters={filters}
+                      onFiltersChange={setFilters}
+                      onClose={() => setShowFilters(false)}
+                    />
+                  </div>
+                )}
+                
+                {/* Results Info and Sort */}
+                <div className="flex flex-col sm:flex-row justify-between items-center">
+                  <div className="mb-4 sm:mb-0">
+                    <h3 className="text-xl font-semibold text-white">
+                      Content ({totalItems})
+                    </h3>
+                    {searchQuery && (
+                      <p className="text-gray-400 text-sm mt-1">
+                        Found {totalItems} result{totalItems !== 1 ? 's' : ''} for "{searchQuery}"
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setSortOption('recent')}
+                      className={`px-3 py-1.5 rounded-lg flex items-center text-sm transition-all duration-200 ${
+                        sortOption === 'recent'
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-dark-300 text-gray-400 hover:bg-dark-100'
+                      }`}
+                    >
+                      <Clock size={14} className="mr-1" />
+                      Recent
+                    </button>
+                    <button
+                      onClick={() => setSortOption('popular')}
+                      className={`px-3 py-1.5 rounded-lg flex items-center text-sm transition-all duration-200 ${
+                        sortOption === 'popular'
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-dark-300 text-gray-400 hover:bg-dark-100'
+                      }`}
+                    >
+                      <TrendingUp size={14} className="mr-1" />
+                      Popular
+                    </button>
+                  </div>
+                </div>
+              </div>
               
+              {/* Content Grid */}
               {contentLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {Array.from({ length: 6 }).map((_, index) => (
-                    <div key={index} className="aspect-video bg-dark-300 rounded-lg animate-pulse" />
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
+                    <div key={index} className="aspect-[4/5] bg-dark-300 rounded-lg animate-pulse" />
                   ))}
                 </div>
               ) : contents.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {contents.map((content) => (
                     <div
                       key={content.id}
-                      onClick={() => handleContentClick(content)}
-                      className="group relative aspect-video bg-dark-300 rounded-lg overflow-hidden cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => handleContentDetail(content.id)}
+                      className="group relative aspect-[4/5] bg-dark-300 rounded-lg overflow-hidden cursor-pointer hover:scale-105 transition-transform"
                     >
                       {content.thumbnailUrl ? (
                         <img
                           src={content.thumbnailUrl}
                           alt={content.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover object-center"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          {content.type === 'video' ? (
-                            <Play size={32} className="text-gray-500" />
-                          ) : (
-                            <ImageIcon size={32} className="text-gray-500" />
-                          )}
+                        <div className="w-full h-full flex items-center justify-center bg-dark-400">
+                          <span className="text-4xl">{getContentTypeIcon(content.type)}</span>
                         </div>
                       )}
                       
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <ExternalLink size={24} className="text-white" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80"></div>
+                      
+                      {/* Content Type Badge */}
+                      <div className="absolute top-2 left-2">
+                        <span className="px-2 py-1 bg-black/60 backdrop-blur-sm text-white text-xs font-medium rounded-full capitalize">
+                          {content.type}
+                        </span>
                       </div>
                       
-                      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-                        <h4 className="text-white text-sm font-medium truncate">{content.title}</h4>
-                        <div className="flex items-center justify-between text-xs text-gray-300 mt-1">
-                          <span className="flex items-center">
-                            <Eye size={12} className="mr-1" />
-                            {formatViews(content.views)}
-                          </span>
-                          <span className="capitalize">{content.type}</span>
+                      {/* Views Badge */}
+                      <div className="absolute top-2 right-2">
+                        <div className="flex items-center px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full">
+                          <Eye size={12} className="text-primary-400 mr-1" />
+                          <span className="text-white text-xs font-medium">{formatViews(content.views)}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <h4 className="text-white text-sm font-medium mb-1 line-clamp-2">{content.title}</h4>
+                        <div className="flex items-center justify-between text-xs text-gray-300">
+                          <span>{new Date(content.createdAt).toLocaleDateString()}</span>
+                          {content.tags && content.tags.length > 0 && (
+                            <span className="bg-dark-300/50 px-2 py-1 rounded">
+                              {content.tags.length} tag{content.tags.length !== 1 ? 's' : ''}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-400">
-                  <ImageIcon size={48} className="mx-auto mb-4 opacity-50" />
-                  <p>No content available for this model yet.</p>
+                <div className="text-center py-12 text-gray-400">
+                  <div className="text-6xl mb-4">📄</div>
+                  <p className="text-lg">
+                    {searchQuery || hasActiveFilters 
+                      ? 'No content found matching your criteria' 
+                      : 'No content available for this model yet.'
+                    }
+                  </p>
+                  {(searchQuery || hasActiveFilters) && (
+                    <button 
+                      onClick={clearSearch}
+                      className="mt-4 text-primary-500 hover:text-primary-400 transition-colors"
+                    >
+                      Clear search and filters
+                    </button>
+                  )}
                 </div>
               )}
-            </div>
-
-            {/* Download Section */}
-            <div className="bg-dark-200 rounded-lg shadow-lg p-6">
-              <h1 className="text-3xl font-bold mb-4 text-white">
-                {model.name}
-              </h1>
-
-              <div className="mb-8">
-                <div className="h-0.5 w-16 bg-primary-500 mb-4"></div>
-                <p className="text-gray-300 leading-relaxed">
-                  {model.description}
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="bg-dark-300 p-4 rounded-lg border border-dark-100">
-                  <p className="text-gray-400 text-sm mb-2">To access this content:</p>
-                  <p className="text-white font-medium">Click the button below to visit the Mega link</p>
-                </div>
-
-                <Button
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  onClick={handleDownload}
-                  className="group"
-                >
-                  <span className="flex items-center justify-center">
-                    Mega Link
-                    <ExternalLink size={18} className="ml-2 transition-transform duration-300 group-hover:translate-x-1" />
-                  </span>
-                </Button>
-
-                <p className="text-xs text-gray-500 text-center mt-2">
-                  By accessing this content, you confirm you are 18+ and accept our terms.
-                </p>
-              </div>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Pagination 
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  className="mt-6"
+                />
+              )}
             </div>
           </div>
         </div>
