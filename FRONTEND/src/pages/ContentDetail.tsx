@@ -18,6 +18,7 @@ import {
 import type { Content } from '../types';
 import { contentApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import { linkvertise } from '../components/Linkvertise/Linkvertise';
 
 const ContentDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +38,7 @@ const ContentDetail: React.FC = () => {
       }
 
       try {
+
         setLoading(true);
         
         // Carregar dados do conteúdo
@@ -118,27 +120,8 @@ const ContentDetail: React.FC = () => {
     }).format(views);
   };
 
-  const getContentTypeIcon = (type: string) => {
-    switch (type) {
-      case 'video':
-        return <Play size={20} className="text-white" />;
-      case 'image':
-        return <ImageIcon size={20} className="text-white" />;
-      case 'gallery':
-        return <ImageIcon size={20} className="text-white" />;
-      default:
-        return <Play size={20} className="text-white" />;
-    }
-  };
 
-  const getContentTypeEmoji = (type: string) => {
-    switch (type) {
-      case 'video': return '🎥';
-      case 'image': return '📷';
-      case 'gallery': return '🖼️';
-      default: return '📄';
-    }
-  };
+
 
   if (loading) {
     return (
@@ -179,8 +162,6 @@ const ContentDetail: React.FC = () => {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center mb-3">
-                      <span className="text-2xl mr-2">{getContentTypeEmoji(content.type)}</span>
-                      <span className="ml-2 text-primary-400 font-medium capitalize">{content.type}</span>
                     </div>
                     <h1 className="text-3xl font-bold text-white mb-3">
                       {content.title}
@@ -327,7 +308,7 @@ const ContentDetail: React.FC = () => {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-dark-400">
-                                {getContentTypeIcon(relatedContent.type)}
+                                
                               </div>
                             )}
                             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
@@ -340,7 +321,6 @@ const ContentDetail: React.FC = () => {
                               <Eye size={12} className="mr-1" />
                               <span>{formatViews(relatedContent.views)}</span>
                               <span className="mx-2">•</span>
-                              <span className="capitalize">{relatedContent.type}</span>
                             </div>
                           </div>
                         </div>
