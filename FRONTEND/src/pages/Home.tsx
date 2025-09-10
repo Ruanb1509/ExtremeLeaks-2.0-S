@@ -244,12 +244,7 @@ const Home: React.FC = () => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-dark-300/90"></div>
                       
-                      {/* Content Type Icon */}
-                      <div className="absolute top-2 left-2">
-                        <div className="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center">
-                          {getContentTypeIcon(content.type)}
-                        </div>
-                      </div>
+
 
                       {/* Model Content Count */}
                       {content.model && (
