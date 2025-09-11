@@ -50,7 +50,7 @@ router.post('/register', async (req, res) => {
       country,
       ageConfirmed,
       verificationToken,
-      isVerified: false
+      isVerified: false // User can browse but needs verification for premium
     });
 
     // Enviar email de verificação
@@ -73,9 +73,24 @@ router.post('/register', async (req, res) => {
       // Continuar mesmo se o email falhar
     }
 
+    // Generate access token immediately (user can browse without verification)
+    const accessToken = sign(
+      { email: newUser.email, id: newUser.id },
+      process.env.TOKEN_VERIFY_ACCESS
+    );
+
     res.status(201).json({
-      message: 'Usuário criado com sucesso. Verifique seu email para ativar a conta.',
-      userId: newUser.id
+      message: 'Usuário criado com sucesso. Verifique seu email para desbloquear recursos premium.',
+      token: accessToken,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        isPremium: newUser.isPremium,
+        isVerified: newUser.isVerified,
+        language: newUser.language,
+        country: newUser.country
+      }
     });
   } catch (error) {
     console.error('Erro no registro:', error);

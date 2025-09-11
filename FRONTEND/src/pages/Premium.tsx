@@ -23,18 +23,23 @@ const Premium: React.FC = () => {
         alert('Você precisa estar logado');
         return;
       }
+      
+      // Check if user is verified
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/auth/dashboard`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      if (!response.data.isVerified) {
+        alert('Você precisa verificar seu email antes de comprar o premium. Verifique sua caixa de entrada.');
+        return;
+      }
     
       try {
-        // Primeiro, verifica o status do usuário
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/auth/dashboard`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-    
         const isPremium = response.data.isPremium;
         const email = response.data.email;
     
