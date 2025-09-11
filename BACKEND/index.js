@@ -38,6 +38,8 @@ const i18nRouter = require('./routes/i18n');
 const { router: ageVerificationRouter, ageVerificationMiddleware } = require('./routes/ageVerification');
 const purchaseRouter = require('./routes/Purchase');
 const billingRouter = require('./routes/billing');
+const commentsRouter = require('./routes/comments');
+const likesRouter = require('./routes/likes');
 
 app.use('/auth', authRouter);
 app.use('/age-verification', ageVerificationRouter);
@@ -49,6 +51,8 @@ app.use('/content', ageVerificationMiddleware, contentRouter);
 app.use('/reports', reportsRouter);
 app.use('/purchase', purchaseRouter);
 app.use('/billing', billingRouter);
+app.use('/comments', commentsRouter);
+app.use('/likes', likesRouter);
 
 // Rota de saúde
 app.get('/health', (req, res) => {

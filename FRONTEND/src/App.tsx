@@ -14,6 +14,7 @@ import AdminModels from './pages/admin/AdminModels';
 import AdminContent from './pages/admin/AdminContent';
 import AdminReports from './pages/admin/AdminReports';
 import BillingPortal from './pages/BillingPortal';
+import YourAccount from './pages/YourAccount';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
             <Route path="/success" element={<PaymentSuccess />} />
             <Route path="/cancel" element={<PaymentCancel />} />
             <Route path="/billing" element={<BillingPortal />} />
+            <Route path="/account" element={<YourAccount />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/models" element={<AdminModels />} />
             <Route path="/admin/content" element={<AdminContent />} />

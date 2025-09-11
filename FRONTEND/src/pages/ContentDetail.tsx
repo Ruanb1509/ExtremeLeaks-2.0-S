@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import ReportModal from '../components/ui/ReportModal';
 import ContentLimitModal from '../components/ui/ContentLimitModal';
+import CommentSection from '../components/ui/CommentSection';
+import LikeButton from '../components/ui/LikeButton';
 import { 
   ArrowLeft, 
   ExternalLink, 
@@ -314,6 +316,17 @@ const ContentDetail: React.FC = () => {
                     By accessing this content, you confirm you are 18+ and accept our terms.
                   </p>
                 </div>
+                
+                {/* Like Button */}
+                <div className="mt-6 flex justify-center">
+                  <LikeButton
+                    contentId={content.id}
+                    type="content"
+                    initialLikes={0}
+                    initialIsLiked={false}
+                    size="lg"
+                  />
+                </div>
               </div>
 
               {/* Model Info */}
@@ -342,6 +355,14 @@ const ContentDetail: React.FC = () => {
                   </div>
                 </div>
               )}
+              
+              {/* Comments Section */}
+              <div className="mt-6">
+                <CommentSection
+                  contentId={content.id}
+                  type="content"
+                />
+              </div>
             </div>
 
             {/* Sidebar - Related Content */}
