@@ -3,26 +3,14 @@ module.exports = (sequelize, DataTypes) => {
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: 'Users',
-        key: 'id'
-      }
     },
     contentId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      references: {
-        model: 'contents',
-        key: 'id'
-      }
     },
     modelId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      references: {
-        model: 'models',
-        key: 'id'
-      }
     },
     text: {
       type: DataTypes.TEXT,
